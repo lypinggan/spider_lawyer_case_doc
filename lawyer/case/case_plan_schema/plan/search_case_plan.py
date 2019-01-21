@@ -19,7 +19,7 @@ import datetime
 import time
 import math
 from proxy.pool import ProxyPool
-from plan.pipeline import FilePipeline
+from plan.pipeline import FilePipeline, DBPipeline
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S', filemode='a', )
@@ -30,6 +30,7 @@ import requests
 # import tools
 # from task_schema import db
 from lawcase.js import wen_shu_js
+from plan.manager import SearchConditionBeanManager, SearchConditionBean
 
 import util.post_util as post_util
 from util.post_util import get_random_header
@@ -37,158 +38,6 @@ from plan.plan_config import TABLE_NAME_SUFFIX
 
 pool = ProxyPool()
 pool.change_ip_proxy_cache(1)
-
-
-class SearchConditionBean(object):
-    """
-    搜索条件
-    """
-    __range_format = "{}:{} TO {}"  # 时间区间
-    __str_format = "{}:{}"  #
-
-    def __init__(self, name, value: list):
-        """
-        条件初始化
-        :param name:条件名字
-        :param value:条件值
-        :param range:是否是区间值
-        """
-        self.name = name
-        self.value = value
-        self.int_value = 0
-        assert len(value) >= 1
-        if len(value) == 1:
-            self.range = False
-        else:
-            self.range = True
-
-    def str_condition(self):
-        __ret = ""
-        if self.range:
-            __ret = self.__range_format.format(self.name, self.value[0], self.value[1])
-        else:
-            __ret = self.__str_format.format(self.name, self.value[0])
-        return __ret
-
-    def set_int_value(self, int_value):
-        self.int_value = int_value
-
-    def __str__(self):
-        return self.str_condition()
-
-    def __repr__(self):
-        return self.__str__()
-
-
-class SearchConditionBeanManager(object):
-    _priority = {"裁判年份": False, "裁判日期": True}
-    _seperate = ","  # 分割字符
-    _deault_node_case_num = -1
-    _max_case_count = 200
-
-    def __init__(self, beans: list):
-        self.child_node = []  # 是否有子节点
-        self.node_case_num = self._deault_node_case_num  # 该节点的案例数
-        self.beans = beans
-
-    def is_load_case(self):
-        """
-        是否有加载过
-        :return:
-        """
-        return self.node_case_num != self._deault_node_case_num
-
-    def is_complete(self):  # TODO:
-        """
-        是否完成了分割
-        :return:
-        """
-        complete = False
-        if self.node_case_num == self._deault_node_case_num:
-            return complete
-        if self.child_node:
-            for data in self.child_node:
-                assert isinstance(data, SearchConditionBeanManager)
-                if not data.is_complete():
-                    return complete
-        elif self.node_case_num > 200:  # 继续细分
-            return complete
-        complete = True
-        return complete
-
-    def str(self):
-        '''
-        搜索条件字符串
-        :param beans:条件集
-        :return:
-        '''
-        if self.beans:
-            __ret_str = ""
-            for bean in self.beans:
-                assert isinstance(bean, SearchConditionBean)
-                seperate = ""
-                if __ret_str:  # 不是第一个元素
-                    seperate = self._seperate
-                __ret_str += seperate + bean.str_condition()
-            return __ret_str
-
-    @staticmethod
-    def build(string_condition):
-        if string_condition:
-            __ret = []
-            __str_list = string_condition.split(sep=SearchConditionBeanManager._seperate)
-            for __str in __str_list:
-                __sub_str_list = __str.split(":")
-                print(__sub_str_list)
-                if " TO " in __sub_str_list[1]:
-                    __range_str_list = __sub_str_list[1].split(sep=" TO ")
-                    __ret.append(
-                        SearchConditionBean(name=__sub_str_list[0], value=[__range_str_list[0], __range_str_list[1]]))
-                else:
-                    __ret.append(SearchConditionBean(name=__sub_str_list[0], value=[__sub_str_list[1]]))
-            return SearchConditionBeanManager(__ret)
-
-    def append_bean(self, bean):
-        assert isinstance(bean, SearchConditionBean)
-        update = False
-        for data in self.beans:
-            if bean.name in data.name:
-                data.value = bean.value
-                update = True
-        if not update:
-            self.beans.append(bean)
-
-    def query_bean_value_by(self, name):
-        for bean in self.beans:
-            if name in bean.name:
-                return bean.value
-        return []
-
-    def priority(self):
-        for (key, value) in self._priority.items():
-            if key not in self.str():
-                return key
-
-    def priority_proceed(self):
-        """
-        是否继续执行:True,还可以继续获取页数
-        :return:
-        """
-        if self.priority():
-            return self._priority[self.priority()]
-
-    def __str__(self):
-        templete = ""
-        if len(self.child_node) == 0:
-            templete = """node_case_num={} beans_str={} child_node={}"""
-        else:
-            templete = """node_case_num={} beans_str={} child_node={}
-"""
-        return templete.format(str(self.node_case_num), self.str(),
-                               str(self.child_node))
-
-    def __repr__(self):
-        return self.__str__()
 
 
 def condition_helper(classify="裁判日期", schema_day="2018-08-09"):
@@ -221,7 +70,7 @@ def init_case_plan_schema():
         #     continue
         while True:
             try:
-                ret = init_court_tree(condition=condition_helper(schema_day))
+                ret = init_area_court_tree(condition=condition_helper(schema_day))
                 break
             except json.decoder.JSONDecodeError:
                 logging.exception("JSONDecodeError")
@@ -272,7 +121,7 @@ def extract_content(param, retry=60):
             logging.info(headers)
             ret = requests.post(url='http://wenshu.court.gov.cn/List/TreeContent', data=payload, headers=headers,
                                 proxies=ip_proxy_item.proxies,
-                                timeout=30)
+                                timeout=25)
             assert ret.status_code == 200
             assert ret.json()
             json_text = ret.json()
@@ -293,14 +142,18 @@ def extract_content(param, retry=60):
             retry = retry - 1
 
 
-def partition_context(manager: SearchConditionBeanManager):
+def partition_context(manager: SearchConditionBeanManager, only_year=False):
     """
-    条件分片
+    裁判年份-条件分片
     :param param: 上一个条件
     :return:
     """
     # manager = SearchConditionBeanManager.build(param)
     if manager.child_node:  # 如果有子节点,不加载
+        return manager
+    if manager.is_load_case():
+        return manager
+    if only_year and "裁判日期" in manager.str():
         return manager
     param = manager.str()
     json_text = extract_content(param)
@@ -310,8 +163,7 @@ def partition_context(manager: SearchConditionBeanManager):
             child = it.get("Child")
             int_value = it.get("Value")
             manager.node_case_num = int(int_value)
-            print("==============")
-            print(manager)
+            logging.info(manager)
             for _child_it in child:
                 _child_key = _child_it.get("Key")
                 _child_value = _child_it.get("Value")
@@ -365,20 +217,25 @@ def proceed_court_tree_context(condition="裁判日期:2018-09-01 TO 2018-09-01"
     elif count <= 200:
         ret_context.append({param: count})  # 统计算法数，理论存在文档数
     else:
-        for it in json_var[0].get("Child"):
+        _data = json_var[0].get("Child")
+        _length = len(_data)  # 数据长度
+        for index, it in enumerate(_data):
             _key = it.get("Key")
             _int_value = it.get("IntValue")
             _field = it.get("Field")
             if _key == "" or _int_value == 0:
                 continue
-            if _int_value <= 200 or _field == "基层法院":
+            if _int_value <= 200:
                 ret_context.append({"{},{}:{}".format(condition, _field, _key): _int_value})
                 continue
             else:
-                proceed_court_tree_context(condition, _field, _key, value, ret_context)
+                if (index - 1) > 0 and "此节点加载中" in _data[index - 1].get("Value"):
+                    proceed_court_tree_context(condition, _field, _key, value, ret_context)
+                else:
+                    ret_context.append({"{},{}:{}".format(condition, _field, _key): _int_value})
 
 
-def __proceed_court_tree_context(param, parval, retry=6, proxies={}):
+def __proceed_court_tree_context(param, parval, retry=60):
     payload = {'Param': param,
                'parval': parval,
                }
@@ -392,6 +249,9 @@ def __proceed_court_tree_context(param, parval, retry=6, proxies={}):
                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/50.0.2661.102 UBrowser/6.0.1471.813 Safari/537.36',
                'X-Requested-With': 'XMLHttpRequest',
                }
+    pool.validate_init_ip_proxy()
+    ip_proxy_item = pool.extract_cache_ip_proxy_item()
+    proxies = ip_proxy_item.proxies
     logging.info(payload)
     logging.info(headers)
     success = False
@@ -405,9 +265,17 @@ def __proceed_court_tree_context(param, parval, retry=6, proxies={}):
             ret = requests.post(url='http://wenshu.court.gov.cn/List/CourtTreeContent', data=payload, headers=headers,
                                 proxies=proxies,
                                 timeout=15)
+            assert ret.status_code == 200
             json_text = ret.json()
             ret.close()
+        except requests.exceptions.ProxyError:
+            ip_proxy_item.fail(multiple=5)
+            logging.exception("=*= 错误发生还剩 {} 次 =*=".format(str(retry - count)))
+        except execjs._exceptions.ProgramError:
+            ip_proxy_item.fail(multiple=2)
+            logging.exception("=*= 错误发生还剩 {} 次 =*=".format(str(retry - count)))
         except Exception:
+            ip_proxy_item.fail()
             logging.exception("error==>")
         if "Key" in json_text:
             success = True
@@ -460,7 +328,7 @@ def init_case_plan_schema_day(start_day, end_day, table_name_suffix, classify):
         #     continue
         while True:
             try:
-                ret = init_court_tree(condition=condition_helper(schema_day=schema_day, classify=classify))
+                ret = init_area_court_tree(condition=condition_helper(schema_day=schema_day, classify=classify))
                 break
             except json.decoder.JSONDecodeError:
                 logging.exception("JSONDecodeError")
@@ -477,9 +345,9 @@ def init_case_plan_schema_day(start_day, end_day, table_name_suffix, classify):
     return False
 
 
-def proceed_partition_context(manager: SearchConditionBeanManager):
+def proceed_referee_partition_context(manager: SearchConditionBeanManager):
     """
-    遍历数据
+    裁判日期-遍历数据
     :param manager:
     :return:
     """
@@ -488,9 +356,72 @@ def proceed_partition_context(manager: SearchConditionBeanManager):
     __node_case_num = manager.node_case_num
     if __child_node:
         for __manager in __child_node:
-            proceed_partition_context(__manager)
+            proceed_referee_partition_context(__manager)
     elif __node_case_num > 200:
         __proceed_partition_context(manager)
+    return manager
+
+
+def proceed_area_partition_context(manager: SearchConditionBeanManager):
+    """
+    裁判地域法院-遍历数据
+    :param manager:
+    :return:
+    """
+    assert isinstance(manager, SearchConditionBeanManager)
+    __child_node = manager.child_node
+    __node_case_num = manager.node_case_num
+    if __child_node:
+        for __manager in __child_node:
+            proceed_area_partition_context(__manager)
+    elif __node_case_num > 200:
+        if manager.is_range_end_point(query_bean_type="裁判日期"):
+            init_area_court_tree(manager)
+        logging.warning("=*= proceed_area_partition_context跳过：{} $ {} =*=".format(str(__node_case_num), manager.str()))
+    return manager
+
+
+def init_area_court_tree(manager: SearchConditionBeanManager):
+    """
+    初始化地区法院
+    :param condition:
+    :return:
+    """
+    json_text = extract_content(manager.str())
+    json_data = json.loads(json_text)
+    ret_context = []
+    for it in json_data:
+        print(it)
+        if it.get("Key") == "法院地域":  #
+            child = it.get("Child")
+            int_value = it.get("IntValue")
+            ret_context.append(int_value)
+            for _child_it in child:
+                _child_key = _child_it.get("Key")
+                _child_value = _child_it.get("Value")
+                _child_field = _child_it.get("Field")
+                if _child_key == "":
+                    continue
+                _child_value = int(_child_value)
+                if _child_value == 0:  # 没有值,do nothing
+                    continue
+                if _child_value <= 200:
+                    ret_context.append({"{},{}:{}".format(manager.str(), _child_field, _child_key): _child_value})
+                    continue
+                proceed_court_tree_context(manager.str(), _child_field, _child_key, _child_value,
+                                           ret_context, )
+            break
+        else:
+            continue
+    print(ret_context)
+    if ret_context:
+        for data in ret_context:
+            if isinstance(data, dict) and data:
+                key, value = data.popitem()
+                print(key, value)
+                sub_manager = manager.build(key)
+                sub_manager.node_case_num = value
+                manager.child_node.append(sub_manager)
     return manager
 
 
@@ -521,6 +452,9 @@ def __proceed_partition_context(manager: SearchConditionBeanManager):
     :return:
     """
     assert len(manager.child_node) == 0
+    if manager.is_range_end_point("裁判日期"):
+        logging.warning("=*=__proceed_partition_context跳过: {} =*=".format(manager.str()))
+        return
     __priority = manager.priority()
     if not __priority:
         __priority = "裁判日期"
@@ -543,9 +477,6 @@ def __proceed_partition_context(manager: SearchConditionBeanManager):
 
     __days = days(start_time, end_time)
     __pear_case = math.ceil(manager.node_case_num / 200)
-    print(__pear_case)
-    print(__days)
-    print(__priority)
     __partition = __days // __pear_case - 1
     print(__partition)
     if __partition < 0:
@@ -559,15 +490,16 @@ def __proceed_partition_context(manager: SearchConditionBeanManager):
         _step = _step + datetime.timedelta(days=__partition)  # 偏移结束时间
         if _step > end:
             _step = end
-        bean = SearchConditionBean(name=__priority, value=[_before_step.strftime("%Y-%m-%d"),
-                                                           _step.strftime("%Y-%m-%d")])
+        _before_step_time = _before_step.strftime("%Y-%m-%d")
+        _step_time = _step.strftime("%Y-%m-%d")
+        bean = SearchConditionBean(name=__priority, value=[_before_step_time, _step_time])
         _step = _step + datetime.timedelta(days=1)  # 下一次开始时间
         time_partition_list.append(bean)
     for time_partition in time_partition_list:
         sub_manager = SearchConditionBeanManager.build(manager.str())
         sub_manager.append_bean(time_partition)
         manager.child_node.append(sub_manager)
-    print(manager)
+    logging.info(manager)
 
 
 def partition_load_node_case_num(manager: SearchConditionBeanManager):
@@ -577,7 +509,7 @@ def partition_load_node_case_num(manager: SearchConditionBeanManager):
     :return:
     """
     if not manager.is_load_case():
-        partition_context(manager)
+        partition_context(manager, )
     elif manager.child_node:
         for __manager in manager.child_node:
             partition_load_node_case_num(__manager)
@@ -586,19 +518,27 @@ def partition_load_node_case_num(manager: SearchConditionBeanManager):
 
 # _test = SearchConditionBeanManager.build("上传日期:2018-11-12 TO 2018-11-12,基层法院:南京市鼓楼区人民法院,裁判年份:2014")
 # _test.node_case_num = 2857
-# proceed_partition_context(_test)
+# proceed_referee_partition_context(_test)
 file_pipeline = FilePipeline("C:/Users/Administrator/PycharmProjects/{}".format("test.text"))
 manager = SearchConditionBeanManager.build(
-    "上传日期:2018-11-12 TO 2018-11-12,基层法院:南京市鼓楼区人民法院")
+    "上传日期:2018-11-01 TO 2018-11-01")
 while not manager.is_complete():
-    manager = partition_context(manager)  # 裁判年份
-    file_pipeline.save(manager)
-    manager = proceed_partition_context(manager)  # 裁判日期
-    file_pipeline.save(manager)
-    manager = partition_load_node_case_num(manager)  # 加载未有的案例
-    file_pipeline.save(manager)
-print(manager.is_complete())
-file_pipeline.save(manager)
+    partition_context(manager, only_year=True)  # 裁判年份
+    proceed_referee_partition_context(manager)  # 裁downloadBillOrder判日期
+    partition_load_node_case_num(manager)  # 加载未有的案例
+    proceed_area_partition_context(manager)  # 法院地域
+
+partition_list = manager.partition_list()
+ret = []
+for partition in partition_list:
+    schema_search_str = partition.str()
+    __data = {'schema_search': schema_search_str, 'batch_count': partition.node_case_num,
+              'schema_day': schema_search_str[
+                            schema_search_str.index("上传日期:") + 5:schema_search_str.index("上传日期:") + 15],
+              'total_count': manager.node_case_num}
+    ret.append(__data)
+for it in ret:
+    DBPipeline.save(**it)
 
 # print(manager)
 # json_text = partition_context("上传日期:2018-11-12 TO 2018-11-12,基层法院:南京市鼓楼区人民法院,裁判年份:2014")

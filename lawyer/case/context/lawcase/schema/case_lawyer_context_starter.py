@@ -16,7 +16,6 @@ import logging
 import time
 from lawcase.service.process import LawCaseContextProcessor
 from lawcase.util.redis_task import RedisCaseLawyerContextMasterHelper
-from multiprocessing import cpu_count, Pool
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%a, %d %b %Y %H:%M:%S', filemode='a', filename="case_lawyer_context_starter.log")

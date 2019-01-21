@@ -41,6 +41,10 @@ class Result(object):
         self.court_level = "99"
         self.judge_year = None
         self.province = ""
+        self.doc_id = ""
+        self.casenum = ""
+        self.title = ""
+        self.court = ""
 
     def success(self, data, html, text, master_domain, court_province):
         self.result = True
@@ -55,7 +59,8 @@ class Result(object):
         self.msg = msg
 
     def __str__(self):
-        return str(self.result) + str(self.master_domain) + str(self.province) + str(self.court_level) + str(
+        return str(self.result) + ";doc_id=" + self.doc_id + ";" + str(self.master_domain) + str(self.province) + str(
+            self.court_level) + str(
             self.msg)
 
     def __repr__(self):
@@ -83,6 +88,8 @@ class DocContextJsParser(object):
             data = json.loads(__data_list.pop())
             __html_list = re.findall(r'\\"Html\\":\\"(.*?)\\"}";', java_script)
             if not __html_list:
+                __html_list = re.findall(r'\"Html\":\"(.*?)\"}\";', java_script)
+            if not __html_list:
                 logging.warning("java_script没有Html标签= {}".format(java_script))
                 __ret.fail(msg="没有找到JSON stringify")
                 return __ret
@@ -94,10 +101,17 @@ class DocContextJsParser(object):
             soup = BeautifulSoup(__html, features="html.parser")
             __text = soup.getText(separator="\n")
             __doc_title = doc_title if doc_title else data.get("案件名称")
+            __ret.title = __doc_title
+            __doc_court = doc_court if doc_court else data.get("法院名称")
+            __ret.court = __doc_court
+            __ret.doc_id = __ret.doc_id if __ret.doc_id else data.get("文书ID")
+            if data.get("案号"):
+                __ret.casenum = data.get("案号")
+            __ret.casenum = data.get("案号") if data.get("案号") else __ret.casenum  # 案号填充
             __court_province = data.get("法院省份")
             __master_domain = DocContextJsParser.match_master_skill_domain(doc_title=__doc_title)
             __ret.success(data, __html, __text, __master_domain, __court_province)
-            DocContextJsParser.calculate_court_level(court_name=doc_court, data=data, ret=__ret)
+            DocContextJsParser.calculate_court_level(court_name=__doc_court, data=data, ret=__ret)
             DocContextJsParser.calculate_judge_year(doc_judge_date=doc_judge_date, ret=__ret)
         except Exception:
             logging.error("=*= 发生了错误")

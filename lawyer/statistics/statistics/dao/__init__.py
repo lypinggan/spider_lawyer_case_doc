@@ -11,7 +11,7 @@ class LawyerDao(object):
 
     @staticmethod
     def extract_all_lawyer_id():
-        row = db.fetch_all("SELECT id FROM lawyer limit 10", ())
+        row = db.fetch_all("SELECT id FROM lawyer", ())
         print(row)
         return row
 

@@ -170,8 +170,16 @@ class LawyerBean(object):
         if self.is_common_cert_num():
             __cert_type = self.cert_num[9:10]  # 执业类别
             __cert_year = self.cert_num[5:9]
+            __cert_sex = self.cert_num[10:11]  # 执业第11位,表男女
             self.cert_year = __cert_year
-            self.cert_now_year = YEAR - int(__cert_year) + 1
+            try:
+                self.cert_now_year = YEAR - int(__cert_year) + 1
+                if __cert_sex == "0":
+                    self.sex = "男"
+                elif __cert_sex == "1":
+                    self.sex = "女"
+            except Exception:
+                self.cert_now_year = __cert_year + ":解析错误"
             self.cert_type = CERT_CONSTANT.get(__cert_type)
 
     def proceed_work_space(self):
@@ -301,31 +309,32 @@ class TitleRow(object):
 
 ##################excel 标题配置 开始#####################
 
-# lawyer_id_list = LawyerDao.extract_all_lawyer_id()
-lawyer_id_list = [{'id': '4a423e0c02b9e7aa5acf2b4d06427ac1'}]
-_data = LawyerDao.query_by_lawyer_id(lawyer_id_list[0].get("id"))
-lawyer = LawyerBean(**_data)
+
+# lawyer_id_list = [{'id': '4a423e0c02b9e7aa5acf2b4d06427ac1'}]
+# _data = LawyerDao.query_by_lawyer_id(lawyer_id_list[0].get("id"))
+# lawyer = LawyerBean(**_data)
 # ------------------
+# print(lawyer_id_list)
+#
+# print(lawyer)
+# row.write(lawyer)
+lawyer_id_list = LawyerDao.extract_all_lawyer_id()
+index = 0
 wb = Workbook()
 ws = wb.active
 ws.title = "认证律师用户画像"
-print(lawyer_id_list)
 row = TitleRow(sheet=ws, **TITLE_DICT)
-print(lawyer)
-row.write(lawyer)
+for lawyer in lawyer_id_list:
+    _data = LawyerDao.query_by_lawyer_id(lawyer.get("id"))
+    lawyer = LawyerBean(**_data)
+    row.write(lawyer)
+    index += 1
+    if index % 10000 == 0:
+        print("==========save start===================")
+        wb.save(r'.\{}统计表.xlxs'.format(str(time.time())))
+        print("==========save ok===================")
+    print("休眠1秒钟 ", str(index))
 wb.save('.\{}统计表_data.xlsx'.format(str(time.time())))
-# index = 0
-# for lawyer in lawyer_id_list:
-#     _data = LawyerDao.query_by_lawyer_id(lawyer.get("id"))
-#     lawyer = LawyerBean(**_data)
-#     row.write(lawyer)
-#     index += 1
-#     if index % 10000 == 0:
-#         print("==========save start===================")
-#         workbook.save(r'.\{}统计表.xlxs'.format(str(time.time())))
-#         print("==========save ok===================")
-#     print("休眠1秒钟 ", str(index))
-# workbook.save(r'.\{}统计表_end.xls'.format(str(time.time())))
 ##################excel 标题配置 结束#####################
 # ---------------------------
 # sheet = workbook.add_sheet('律师案例数据分析', cell_overwrite_ok=True)

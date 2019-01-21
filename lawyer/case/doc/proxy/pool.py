@@ -168,7 +168,7 @@ class ProxyPool(object):
             if not value or value.refresh:
                 update_key.append(key)
                 if hasattr(value, "create_date"):
-                    if (datetime.datetime.now() - value.create_date).seconds < 120:  # 2内分钟不提取
+                    if (datetime.datetime.now() - value.create_date).seconds < 60:  # 1分钟不提取
                         logging.warning("[=*= 失败率过高=*=],暂时不提取新IP 【{}】".format(value))
                         update_key.remove(key)
 
@@ -277,7 +277,7 @@ class IpPort(object):
             # "http://47.107.111.163:8123/download/doc/?order=cbda12cf21444c55a04c33deb4a9f938&json=1&sep=3"
             # "http://47.107.111.163:8123/list/context/?order=cbda12cf21444c55a04\c33deb4a9f938&json=1&sep=3"
             # "http://47.107.111.163:8123/list/context/?tset=123123"
-            ret = requests.get("http://47.107.111.163:8123/download/doc_v3/number_{}_".format(number))
+            ret = requests.get("http://106.12.106.66:8123/download/doc_v3/number_{}_".format(number))
             logging.info(ret.text)
             dj = json.loads(ret.text)
             for it in dj['data']:

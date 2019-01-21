@@ -23,6 +23,7 @@
 --------
 | 任务节点 | 执行脚本 | 说明 | 备注 |
 |:-------|:-------------|:----------|:----------|
+| [生成任务计划](lawyer/case/case_plan_schema/plan/search_case_plan.py) | *python search_case_plan.py* |  |  |
 | [下载搜索目录加密返回结果](lawyer/case/doc/redis_case_plan_schema_task_master.sh) | *sh redis_case_plan_schema_task_master.sh* |  |  |
 | [解析加密文档id](lawyer/case/doc/redis_case_plan_schema_detail_master.sh)  | *sh redis_case_plan_schema_detail_master.sh* |  |  |
 | [根据文档id，下载文档JavaScript内容](lawyer/case/doc/redis_case_detail_master.sh) | *sh redis_case_detail_master.sh* |  |  |
