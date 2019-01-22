@@ -177,12 +177,17 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
         writ_content = None
         try:
             ProxyPool.check_proxy(proxy)  # 代理检查
+            from lawyer.case.mmewmd_crack_for_wenshu.doc_page_encrypt import extract_mmd_param
+            mmd_param_cookie = await extract_mmd_param(client, proxy)
+            client.cookie_jar.clear()
             writ_content = await client.post(
                 url='http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}'.format(doc_id),
                 proxy_headers=headers,
                 data=payload,
                 timeout=15,
-                proxy=proxy)
+                proxy=proxy,
+                cookies=mmd_param_cookie,
+            )
             java_script = await writ_content.text()
             assert writ_content.status == 200
             # 检查内容是否正确*** 开始 ***
@@ -254,12 +259,16 @@ async def async_get_data_javascript_step2(client, doc_id):
     writ_content = None
     try:
         ProxyPool.check_proxy(proxy)  # 代理检查
+        from lawyer.case.mmewmd_crack_for_wenshu.doc_page_encrypt import extract_mmd_param
+        cookies = extract_mmd_param(client, proxy)
         writ_content = await client.post(
             url='http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}'.format(doc_id),
             proxy_headers=headers,
             data=payload,
             timeout=18,
-            proxy=proxy)
+            proxy=proxy,
+            cookies=cookies,
+        )
         java_script = await writ_content.text()
         assert writ_content.status == 200
         # 检查内容是否正确*** 开始 ***

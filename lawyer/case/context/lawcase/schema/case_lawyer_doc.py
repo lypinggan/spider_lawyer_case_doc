@@ -83,6 +83,7 @@ if __name__ == '__main__':
     pool.change_ip_proxy_cache(CaseLawyerDocConfig.IP_PROXY_CACHE_NUM__)  # 设置代理池一个ip
     while True:
         loop = asyncio.get_event_loop()
+        SPIDER_BATCH_NUM = 1
         extract_num = CaseLawyerDocConfig.SPIDER_BATCH_NUM - len(task_pool)
         data_list = RedisCaseLawyerDocMaster.extract(extract_num=extract_num)
         task_pool.extend(data["doc_id"] for data in data_list)
@@ -95,3 +96,14 @@ if __name__ == '__main__':
             asyncio.wait(
                 [download.async_get_data_javascript_callback(doc_id, callback=CallBack) for doc_id in task_pool])
         )
+
+# if __name__ == '__main__':
+#     pool = ProxyPool()
+#     pool.change_ip_proxy_cache(1)  # 设置代理池一个ip
+#     loop = asyncio.get_event_loop()
+#     task_pool = ["8d39d696-e030-4eac-8870-a9d00033bce9"]
+#     pool.validate_init_ip_proxy()
+#     loop.run_until_complete(
+#         asyncio.wait(
+#             [download.async_get_data_javascript_callback(doc_id, callback=CallBack) for doc_id in task_pool])
+#     )

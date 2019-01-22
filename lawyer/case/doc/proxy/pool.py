@@ -278,11 +278,12 @@ class IpPort(object):
             # "http://47.107.111.163:8123/list/context/?order=cbda12cf21444c55a04\c33deb4a9f938&json=1&sep=3"
             # "http://47.107.111.163:8123/list/context/?tset=123123"
             ret = requests.get("http://106.12.106.66:8123/download/doc_v3/number_{}_".format(number))
+            ret = requests.get("http://http.tiqu.qingjuhe.cn/getip?num=1&type=2&pro=&city=0&yys=0&port=1&pack=26223&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=0&regions=")
             logging.info(ret.text)
             dj = json.loads(ret.text)
             for it in dj['data']:
-                __ret.append(it.get("IP"))
-            # return dj['data'][0].get("ip") + ":" + str(dj['data'][0].get("port"))
+                # __ret.append(it.get("IP"))
+                __ret.append(it.get("ip") + ":" + it.get("port"))
             # return dj['data'][0].get("IP")
             # return dj['data'][0].get("ip") + ":" + str(dj['data'][0].get("port"))
             # return dj[0].get("host") + ":" + str(dj[0].get("port"))

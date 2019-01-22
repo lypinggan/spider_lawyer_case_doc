@@ -45,6 +45,8 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         pool.validate_init_ip_proxy()
         remove_not_process_data(task_pool)
+        # todo:
+        LIST_CONTEXT_BATCH_NUM = 1
         extract_num = LIST_CONTEXT_BATCH_NUM - len(task_pool)
         bean_list = RedisCaseLawyerTaskMasterHelper.extract_lawyer_info_bean_list(extract_num=extract_num)
         task_pool.extend(bean_list)
@@ -52,6 +54,8 @@ if __name__ == '__main__':
             logging.info("=*=没有任务，休眠60秒=*=")
             time.sleep(60)
             continue
-        loop.run_until_complete(asyncio.wait(
-            [CasePlanSchema.proceed_schema(bean=bean_data) for bean_data in task_pool])
+        loop.run_until_complete(
+            asyncio.wait(
+                [CasePlanSchema.proceed_schema(bean=bean_data) for bean_data in task_pool]
+            )
         )

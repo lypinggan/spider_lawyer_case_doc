@@ -131,16 +131,25 @@ class CasePlanSchema(object):
 
 
 async def _proceed_schema(param, proxies={}, index=1, page=20):
-    guid = execjs.compile(wen_shu_js).call('guid')
-    referer = "http://wenshu.court.gov.cn/list/list/?sorttype=1"
+    proxies = {"http":""}
+    from lawyer.case.mmewmd_crack_for_wenshu.doc_page_encrypt import build_uuid, get_vl5x, extract_mmd_param
+    guid = build_uuid()
     async with aiohttp.ClientSession() as client:
+        cookies = await extract_mmd_param(client, proxies)
         client.cookie_jar.clear()
-        vjkl5 = await download.async_post_get_vjkl5_url(client, guid, proxies=proxies, url=referer)
-        vl5x = execjs.compile(wen_shu_js).call('getkey', vjkl5)
+        vjkl5 = await download.async_post_get_vjkl5_url(client,
+                                                        guid,
+                                                        proxies=proxies,
+                                                        cookies=cookies,
+                                                        )
+
+        vl5x = get_vl5x(vjkl5)
+        cookies["vjkl5"] = vjkl5
         number = 'wens'
         json_text = await download.post_list_context_by_param(client, guid, vjkl5, vl5x, number, param,
                                                               index=index,
                                                               page=page,
-                                                              _proxies=proxies
+                                                              _proxies=proxies,
+                                                              cookies=cookies,
                                                               )
         return json_text
