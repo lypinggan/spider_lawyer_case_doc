@@ -67,6 +67,7 @@ def decrypt_id_array(run_eval, _ids: list) -> dict:
     js1 = js_objs[0] + ';'
     js2 = re.findall(r"_\[_\]\[_\]\((.*?)\)\(\);", js_objs[1])[0]
     key = _context.call("EvalKey", js1, js2)
+    print(key)
     key = re.findall(r"\"([0-9a-z]{32})\"", key)[0]
     doc_id_array = _context.call("DecryptDocIDArray", key, _ids)
     for i, doc_id in enumerate(_ids):

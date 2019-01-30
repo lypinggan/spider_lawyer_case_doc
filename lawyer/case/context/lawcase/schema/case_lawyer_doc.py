@@ -8,9 +8,11 @@ root_path = os.path.split(current_Path)[0]
 __root_path = root_path.split(sep="context")[0]
 __root_path_1 = __root_path + "context" + os.sep
 __root_path_2 = __root_path + "doc" + os.sep
+__root_path_3 = __root_path + "mmewmd_crack_for_wenshu" + os.sep
 print(__root_path_1, "========", __root_path_2)
 sys.path.append(__root_path_1)
 sys.path.append(__root_path_2)
+sys.path.append(__root_path_3)
 # ------------------
 import asyncio
 import logging
@@ -83,7 +85,6 @@ if __name__ == '__main__':
     pool.change_ip_proxy_cache(CaseLawyerDocConfig.IP_PROXY_CACHE_NUM__)  # 设置代理池一个ip
     while True:
         loop = asyncio.get_event_loop()
-        SPIDER_BATCH_NUM = 1
         extract_num = CaseLawyerDocConfig.SPIDER_BATCH_NUM - len(task_pool)
         data_list = RedisCaseLawyerDocMaster.extract(extract_num=extract_num)
         task_pool.extend(data["doc_id"] for data in data_list)

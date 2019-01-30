@@ -185,13 +185,6 @@ class RedisCaseLawyerDocMaster(object):
         :return:
         """
         ret = []
-
-        """
-                self.doc_id = doc_id
-        self.lawyer_id = lawyer_id
-        self.spider_id = spider_id
-        self.sync_status = self.sync_status
-        """
         if data:
             ret.append(CaseLawyerDocBean(doc_id=data["doc_id"],
                                          lawyer_id=data["lawyer_id"],

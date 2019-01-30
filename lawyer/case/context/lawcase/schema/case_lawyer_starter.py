@@ -8,9 +8,11 @@ root_path = os.path.split(current_Path)[0]
 __root_path = root_path.split(sep="context")[0]
 __root_path_1 = __root_path + "context" + os.sep
 __root_path_2 = __root_path + "doc" + os.sep
+__root_path_3 = __root_path + "mmewmd_crack_for_wenshu" + os.sep
 print(__root_path_1, "========", __root_path_2)
 sys.path.append(__root_path_1)
 sys.path.append(__root_path_2)
+sys.path.append(__root_path_3)
 # ------------------
 from proxy.pool import ProxyPool
 import asyncio
@@ -45,8 +47,6 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         pool.validate_init_ip_proxy()
         remove_not_process_data(task_pool)
-        # todo:
-        LIST_CONTEXT_BATCH_NUM = 1
         extract_num = LIST_CONTEXT_BATCH_NUM - len(task_pool)
         bean_list = RedisCaseLawyerTaskMasterHelper.extract_lawyer_info_bean_list(extract_num=extract_num)
         task_pool.extend(bean_list)

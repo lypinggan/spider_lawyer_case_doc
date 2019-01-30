@@ -5,7 +5,7 @@ from lawyer.case.context.lawcase.service.pipeline import SyncCaseLawyerDocPipeli
 f = open("anli", "r", encoding="utf-8")
 java_script = f.read()
 
-lawyer_id = "8af40d176783533401678782dd3002e1"
+lawyer_id = "8af40d176059e321016090d4228e1513"
 scripts = java_script.split("$(function(){$(")
 for script in scripts:
     print("===========")

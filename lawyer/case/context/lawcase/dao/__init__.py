@@ -95,7 +95,7 @@ class CaseLawyerDao(object):
             repeatcont,
             remark,
             page
-        FROM case_lawyer{} WHERE process='{}' limit {}
+        FROM case_lawyer{} WHERE process='{}' order by priority limit {}
         '''.format(TABLE_NAME_SUFFIX, CaseLawyerContextBean.STATUS_00, batch_num)
         logging.info("[CaseLawyerDao extract sql] = {}".format(sql))
         row = fetch_all(sql, ())
@@ -316,7 +316,7 @@ class CaseLawyerDocDao(object):
                    `sync_status`,
                    `master_domain`,
                    `spider_id` 
-               FROM case_lawyer_doc{} WHERE sync_status='{}'  limit {}
+               FROM case_lawyer_doc{} WHERE sync_status='{}' limit {} 
                '''.format(TABLE_NAME_SUFFIX, CaseLawyerDocBean.SYNC_STATUS_20, batch_num)
         logging.info("[CaseLawyerContextDao sync_doc_extract sql] = {}".format(sql))
         row = fetch_all(sql, ())

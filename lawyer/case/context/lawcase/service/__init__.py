@@ -1,17 +1,18 @@
 # coding=utf-8
-import logging
-import aiohttp
-import execjs
 import concurrent
+import json
+import logging
+import time
+
+import aiohttp
+from aiohttp.client_exceptions import ClientOSError
+from aiohttp.client_exceptions import ClientProxyConnectionError as ClientProxyConnectionError
+
+from lawcase.bean import LawyerInfoBean
 from lawcase.config import PAGE_NUM, RETRY_NUM, MAX_PAGE_DATA_NUM
+from lawcase.dao import CaseLawyerContextDao, CaseLawyerDao
 from lawcase.service import download
 from proxy.pool import ProxyPool, NotIpProxyException
-from aiohttp.client_exceptions import ClientProxyConnectionError as ClientProxyConnectionError
-from aiohttp.client_exceptions import ClientOSError
-from lawcase.bean import LawyerInfoBean
-from lawcase.dao import CaseLawyerContextDao, CaseLawyerDao
-import json
-from lawcase.js import wen_shu_js
 from util.decorator import log_cost_time
 
 # 代理池
@@ -131,25 +132,36 @@ class CasePlanSchema(object):
 
 
 async def _proceed_schema(param, proxies={}, index=1, page=20):
-    proxies = {"http":""}
-    from lawyer.case.mmewmd_crack_for_wenshu.doc_page_encrypt import build_uuid, get_vl5x, extract_mmd_param
-    guid = build_uuid()
-    async with aiohttp.ClientSession() as client:
-        cookies = await extract_mmd_param(client, proxies)
-        client.cookie_jar.clear()
-        vjkl5 = await download.async_post_get_vjkl5_url(client,
-                                                        guid,
-                                                        proxies=proxies,
-                                                        cookies=cookies,
-                                                        )
+    from doc_page_encrypt import build_uuid, get_vl5x, extract_mmd_param
+    cookies = {
+        "ccpassport": "1ff98c661b8f424096c234ce889da9b0",
+        "_gscu_2116842793": "47626758817stt18",
+        "_gscs_2116842793": "47659453ttzz3o20|pv:14",
+        "_gscbrs_2116842793": "1",
+        "wzwsconfirm": "0e561c10c60c2f0d44410644eb3c2403",
+        "wzwstemplate": "NQ==",
+        "wzwschallenge": "-1",
+        "wzwsvtime": ""
+    }
 
-        vl5x = get_vl5x(vjkl5)
-        cookies["vjkl5"] = vjkl5
-        number = 'wens'
+    url = "http://wenshu.court.gov.cn/list/list/?sorttype=1&conditions=searchWord+%E4%BA%91%E5%8D%97%E4%B8%87%E6%88%90%E5%BE%8B%E5%B8%88%E4%BA%8B%E5%8A%A1%E6%89%80+LS++%E5%BE%8B%E6%89%80:%E4%BA%91%E5%8D%97%E4%B8%87%E6%88%90%E5%BE%8B%E5%B8%88%E4%BA%8B%E5%8A%A1%E6%89%80&conditions=searchWord+%E9%87%91%E5%88%99%E8%BE%89+LAWYER++%E5%BE%8B%E5%B8%88:%E9%87%91%E5%88%99%E8%BE%89"
+    context = {"f80s": "", "f80t": "", "meta": "", "ywtu": "", "f80t_n": ""}
+    await extract_mmd_param(cookies, proxies, url, context)
+
+    # 获取正文
+    vjkl5 = context.get("vjkl5")
+    vl5x = get_vl5x(vjkl5)
+    number = 'wens'
+    guid = build_uuid()
+    cookies['wzwsvtime'] = str(int(time.time()))
+    cookies['vjkl5'] = vjkl5
+    cookies['FSSBBIl1UgzbN7Nenable'] = "true"
+    cookies['FSSBBIl1UgzbN7N80S'] = context.get("f80s")
+    cookies['FSSBBIl1UgzbN7N80T'] = context.get("f80t_n")
+    async with aiohttp.ClientSession(cookies=cookies) as client:
         json_text = await download.post_list_context_by_param(client, guid, vjkl5, vl5x, number, param,
                                                               index=index,
                                                               page=page,
                                                               _proxies=proxies,
-                                                              cookies=cookies,
                                                               )
         return json_text
