@@ -173,21 +173,22 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
     proxy = ip_proxy_item.proxies.get("http")
     logging.info(str("doc_id=" + doc_id) + ";===proxy===" + proxy)
     writ_content = None
-    from doc_page_encrypt import build_mmewmd, InvalidIP
+    from doc_page_encrypt import build_mmewmd, InvalidIP, main
     try:
-        mmd_param_cookie = await build_mmewmd(proxy)
-        async with aiohttp.ClientSession(cookies=mmd_param_cookie) as client:
-
+        # mmd_param_cookie = await build_mmewmd(proxy)
+        if True:
+            # async with aiohttp.ClientSession(cookies=mmd_param_cookie) as client:
             ProxyPool.check_proxy(proxy)  # 代理检查
-            writ_content = await client.post(
-                url='http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}'.format(doc_id),
-                proxy_headers=headers,
-                data=payload,
-                timeout=15,
-                proxy=proxy,
-            )
-            java_script = await writ_content.text()
-            assert writ_content.status == 200
+            # writ_content = await client.post(
+            #     url='http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}'.format(doc_id),
+            #     proxy_headers=headers,
+            #     data=payload,
+            #     timeout=15,
+            #     proxy=proxy,
+            # )
+            # java_script = await writ_content.text()
+            # assert writ_content.status == 200
+            java_script = await main(doc_id, proxies=ip_proxy_item.proxies)
             # 检查内容是否正确*** 开始 ***
             if java_script and "window.location.href" in java_script:
                 logging.info("---ip已经可能被封--- 【{}】".format(ip_proxy_item))

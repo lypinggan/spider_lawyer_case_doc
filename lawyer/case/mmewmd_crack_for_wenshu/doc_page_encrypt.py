@@ -143,6 +143,7 @@ async def extract_mmd_param(cookies, _proxies, url, context) -> dict:
         context["f80t"] = f80t
         ctx1 = execjs.compile(js1)
         ctx2 = execjs.compile(js2)
+        print(html_text)
         meta = html.xpath('//*[@id="9DhefwqGPrzGxEp9hPaoag"]/@content')[0]
         context["meta"] = meta
         ywtu = ctx2.call("getc", meta)
@@ -210,10 +211,11 @@ async def main(doc_id, proxies=None):
     rsp = requests.post(url, headers=headers, data=data, proxies=proxies)
     assert rsp.status_code == 200
     print(rsp.text)
+    return rsp.text
 
 
 proxies = {
-    "http": None,
+    "http": "http://125.87.105.151:33044",
 }
 # proxy = {"http": "http://222.219.69.216:15442"}
 

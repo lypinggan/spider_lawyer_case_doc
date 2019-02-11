@@ -53,7 +53,6 @@ class CallBack(object):
         :return:
         """
         # 保存html页面
-        ip_proxy_item.success()
         task_pool.remove(doc_id)
         state = CaseLawyerDocBean.SYNC_STATUS_09
         if java_script is None or java_script == "":
@@ -62,6 +61,7 @@ class CallBack(object):
             state = CaseLawyerDocBean.SYNC_STATUS_07
         elif "JSON.stringify" in java_script:
             state = CaseLawyerDocBean.SYNC_STATUS_10
+            ip_proxy_item.success()
         else:
             logging.warning("下载文书发生错误:->" + str(java_script))
         try:
