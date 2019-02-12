@@ -19,7 +19,7 @@ sys.path.append(root_path)
 import config
 
 print(config.__path__)
-from config import DOC_RETRY_COUNT, IP_PROXY_CACHE
+from config import DOC_RETRY_COUNT, DOC_STOP_COUNT, IP_PROXY_CACHE
 
 
 class IpProxyItem(object):
@@ -62,6 +62,16 @@ class IpProxyItem(object):
             if not self.refresh:
                 self.refresh = True
                 logging.info("===fail IP置为无效===:{}".format(self.proxies))
+
+    def is_stop(self):
+        """
+        ip一直无效,后续不再请求.等待ip再次更新.
+        :return:
+        """
+        ret = False
+        if self.recent_fail_count >= DOC_STOP_COUNT:
+            ret = True
+        return ret
 
     def refresh(self):
         """
@@ -279,7 +289,9 @@ class IpPort(object):
             # "http://47.107.111.163:8123/list/context/?tset=123123"
             # ret = requests.get("http://106.12.106.66:8123/download/doc_v3/number_{}_".format(number))
             # ret = requests.get("http://http.tiqu.qingjuhe.cn/getip?num=1&type=2&pro=&city=0&yys=0&port=1&pack=26223&ts=0&ys=0&cs=0&lb=1&sb=0&pb=4&mr=0&regions=")
-            ret = requests.get("http://47.96.139.87:8081/Index-generate_api_url.html?packid=7&fa=3&qty={}&port=1&format=json&ss=5&css=&ipport=1&pro=&city=".format(number))
+            ret = requests.get(
+                "http://47.96.139.87:8081/Index-generate_api_url.html?packid=7&fa=3&qty={}&port=1&format=json&ss=5&css=&ipport=1&pro=&city=".format(
+                    number))
 
             logging.info(ret.text)
             dj = json.loads(ret.text)

@@ -170,6 +170,9 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
                'X-Requested-With': 'XMLHttpRequest',
                }
     ip_proxy_item = proxy_pool.extract_cache_ip_proxy_item()
+    if not ip_proxy_item:
+        logging.info(str("doc_id=" + doc_id) + ";===proxy===" + str(ip_proxy_item))
+        return
     proxy = ip_proxy_item.proxies.get("http")
     logging.info(str("doc_id=" + doc_id) + ";===proxy===" + proxy)
     writ_content = None
@@ -188,6 +191,9 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
             # )
             # java_script = await writ_content.text()
             # assert writ_content.status == 200
+            if ip_proxy_item.is_stop():
+                logging.info("---请求无效,等待再次更新ip--- 【{}】".format(ip_proxy_item))
+                return
             java_script = await main(doc_id, proxies=ip_proxy_item.proxies)
             # 检查内容是否正确*** 开始 ***
             if java_script and "window.location.href" in java_script:

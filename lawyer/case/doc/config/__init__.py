@@ -38,7 +38,7 @@ IP_PROXY_WAIT_NUM = 3  # ip代理少于成功次数
 IP_PEER_DOC_WEIGHT = 12
 DOC_BATCH_COUNT = IP_PROXY_CACHE * IP_PEER_DOC_WEIGHT
 DOC_RETRY_COUNT = IP_PEER_DOC_WEIGHT
-
+DOC_STOP_COUNT = DOC_RETRY_COUNT * 2
 #################################
 
 ###############################

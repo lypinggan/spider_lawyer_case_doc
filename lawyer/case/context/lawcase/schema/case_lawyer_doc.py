@@ -93,11 +93,17 @@ if __name__ == '__main__':
             time.sleep(60)
             continue
         pool.validate_init_ip_proxy()
+        begain = time.time()
         loop.run_until_complete(
             asyncio.wait(
                 [download.async_get_data_javascript_callback(doc_id, callback=CallBack) for doc_id in task_pool])
         )
-
+        end = time.time()
+        cost = int(end) - int(begain)  # 批次耗时
+        sleep_time = 10 - cost  # 休眠时间
+        if sleep_time > 0:
+            logging.warning("---批次进行过快,休眠{}秒.---".format(sleep_time))
+            time.sleep(sleep_time)
 # if __name__ == '__main__':
 #     pool = ProxyPool()
 #     pool.change_ip_proxy_cache(1)  # 设置代理池一个ip
