@@ -176,7 +176,7 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
     proxy = ip_proxy_item.proxies.get("http")
     logging.info(str("doc_id=" + doc_id) + ";===proxy===" + proxy)
     writ_content = None
-    from doc_page_encrypt import build_mmewmd, InvalidIP, main
+    from doc_page_encrypt import InvalidIP, main
     try:
         # mmd_param_cookie = await build_mmewmd(proxy)
         if True:
@@ -194,7 +194,7 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
             if ip_proxy_item.is_stop():
                 logging.info("---请求无效,等待再次更新ip--- 【{}】".format(ip_proxy_item))
                 return
-            java_script = await main(doc_id, proxies=ip_proxy_item.proxies)
+            java_script = await main(doc_id, ip_proxy_item=ip_proxy_item)
             # 检查内容是否正确*** 开始 ***
             if java_script and "window.location.href" in java_script:
                 logging.info("---ip已经可能被封--- 【{}】".format(ip_proxy_item))
@@ -207,16 +207,17 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
             # 检查内容是否正确*** 结束 ***
             callback.callback_success(doc_id, java_script, ip_proxy_item)
     except AssertionError:
-        logging.error("---AssertionError--- {} 【{}】".format(str(writ_content.status), ip_proxy_item))
-        if writ_content.status == 503:
+        record_status = writ_content.status if writ_content else writ_content
+        logging.error("---AssertionError--- {} 【{}】".format(str(record_status), ip_proxy_item))
+        proxy_pool.fail(ip_proxy_item)
+        if record_status == 503:
             proxy_pool.fail(ip_proxy_item)
-        elif writ_content.status == 429:
+        elif record_status == 429:
             pass
-        elif writ_content.status == 502:
+        elif record_status == 502:
             pass
         else:
-            logging.error("writ_content.status={} proxy={}".format(str(writ_content.status), proxy))
-            proxy_pool.fail(ip_proxy_item)
+            logging.error("writ_content.status={} proxy={}".format(str(writ_content.status if writ_content else writ_content), proxy))
     except InvalidIP as e:
         logging.error(e.msg)
         proxy_pool.fail(ip_proxy_item, multiple=2)

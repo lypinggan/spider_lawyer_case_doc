@@ -47,18 +47,34 @@ class InvalidIP(Exception):
         self.msg = msg
 
 
-async def build_mmewmd(proxy={}):
+class Context(object):
+
+    def __init__(self, meta, f80t, ywtu):
+        self.meta = meta
+        self.f80t = f80t
+        self.ywtu = ywtu
+        ctx1 = execjs.compile(js1)
+        self.f80t_n = ctx1.call("getCookies", meta, f80t, ywtu)
+
+    def fresh(self):
+        pass
+
+
+async def build_mmewmd(ip_proxy_item=None):
     try:
-        cookies = {
-            "ccpassport": "1ff98c661b8f424096c234ce889da9b0",
-            "_gscu_2116842793": "47626758817stt18",
-            "_gscs_2116842793": "47659453ttzz3o20|pv:14",
-            "_gscbrs_2116842793": "1",
-            "wzwsconfirm": "0e561c10c60c2f0d44410644eb3c2403",
-            "wzwstemplate": "NQ==",
-            "wzwschallenge": "-1",
-            "wzwsvtime": ""
-        }
+        if hasattr(ip_proxy_item, "cookies") and ip_proxy_item.recent_fail_count == 0:  # 失败了
+            cookies = ip_proxy_item.cookies
+        else:
+            cookies = {
+                "ccpassport": "1ff98c661b8f424096c234ce889da9b0",
+                "_gscu_2116842793": "47626758817stt18",
+                "_gscs_2116842793": "47659453ttzz3o20|pv:14",
+                "_gscbrs_2116842793": "1",
+                "wzwsconfirm": "0e561c10c60c2f0d44410644eb3c2403",
+                "wzwstemplate": "NQ==",
+                "wzwschallenge": "-1",
+                "wzwsvtime": ""
+            }
         headers = {
             "Accept": "*/*",
             "Accept-Encoding": "gzip, deflate",
@@ -70,8 +86,21 @@ async def build_mmewmd(proxy={}):
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
         }
         url = "http://wenshu.court.gov.cn/list/list/?sorttype=1&conditions=searchWord+%E4%BA%91%E5%8D%97%E4%B8%87%E6%88%90%E5%BE%8B%E5%B8%88%E4%BA%8B%E5%8A%A1%E6%89%80+LS++%E5%BE%8B%E6%89%80:%E4%BA%91%E5%8D%97%E4%B8%87%E6%88%90%E5%BE%8B%E5%B8%88%E4%BA%8B%E5%8A%A1%E6%89%80&conditions=searchWord+%E9%87%91%E5%88%99%E8%BE%89+LAWYER++%E5%BE%8B%E5%B8%88:%E9%87%91%E5%88%99%E8%BE%89"
-        proxy = proxy if isinstance(proxy, str) else proxy.get("http")
+
+        proxy = ip_proxy_item.proxies if isinstance(ip_proxy_item.proxies, str) else ip_proxy_item.proxies.get("http")
         cookies['wzwsvtime'] = str(int(time.time()))
+        if hasattr(ip_proxy_item, "cookies") and ip_proxy_item.recent_fail_count == 0:
+            cookies['FSSBBIl1UgzbN7Nenable'] = "true"
+            ctx1 = execjs.compile(js1)
+            cookies["FSSBBIl1UgzbN7N80T"] = ctx1.call("getCookies",
+                                                      ip_proxy_item.meta,
+                                                      ip_proxy_item.f80t,
+                                                      ip_proxy_item.ywtu
+                                                      )
+            # ip_proxy_item.f80t = cookies["FSSBBIl1UgzbN7N80T"]
+            ip_proxy_item.cookies = cookies
+            print("------使用了旧cookies------")
+            return cookies
         async with aiohttp.ClientSession() as client:
             rsp = await client.get(
                 url=url,
@@ -93,8 +122,14 @@ async def build_mmewmd(proxy={}):
             f80t_n = ctx1.call("getCookies", meta, f80t, ywtu)
             cookies["FSSBBIl1UgzbN7N80S"] = f80s
             cookies["FSSBBIl1UgzbN7N80T"] = f80t_n
+
+            ip_proxy_item.meta = meta
+            ip_proxy_item.f80t = f80t
+            ip_proxy_item.ywtu = ywtu
+            # ip_proxy_item.cookies = cookies
             return cookies
-    except:
+    except Exception as e:
+        logging.exception(e)
         raise InvalidIP(code=999, msg="获取f80s f80t_n出错了.")
 
 
@@ -189,8 +224,9 @@ async def extract_mmd_param(cookies, _proxies, url, context) -> dict:
         return context
 
 
-async def main(doc_id, proxies=None):
-    cookies = await build_mmewmd(proxies)
+async def main(doc_id, ip_proxy_item):
+    proxies = ip_proxy_item.proxies
+    cookies = await build_mmewmd(ip_proxy_item)
     headers = {
         "Accept": "*/*",
         "Accept-Encoding": "gzip, deflate",
@@ -208,7 +244,7 @@ async def main(doc_id, proxies=None):
         "DocID": "{}".format(doc_id),
     }
     url = "http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}".format(doc_id)
-    rsp = requests.post(url, headers=headers, data=data, proxies=proxies)
+    rsp = requests.post(url, headers=headers, data=data, proxies=proxies)  # TODO:
     assert rsp.status_code == 200
     print(rsp.text)
     return rsp.text

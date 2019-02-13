@@ -132,6 +132,10 @@ class ProxyPool(object):
         print(ProxyPool._ip_proxy_cache_detail)
 
     def __init__(self):
+        """
+
+        :rtype: object
+        """
         ProxyPool.__before_init__()
         self.ip_pool = IpPort.proxies
         if not self.ip_pool:

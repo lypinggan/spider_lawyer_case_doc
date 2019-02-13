@@ -21,7 +21,7 @@ DOC_VERSION = "CPWSWXB_201811_PYTHON"
 class CaseLawyerDocConfig(object):
     # IP_PROXY_CACHE_NUM__ = 4
     # __IP_PROXY_PEER_NUM = 12
-    IP_PROXY_CACHE_NUM__ = 4
+    IP_PROXY_CACHE_NUM__ = 1
     __IP_PROXY_PEER_NUM = 1
     SPIDER_BATCH_NUM = IP_PROXY_CACHE_NUM__ * __IP_PROXY_PEER_NUM  # 批量数据
 

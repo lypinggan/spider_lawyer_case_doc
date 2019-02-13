@@ -87,12 +87,12 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         extract_num = CaseLawyerDocConfig.SPIDER_BATCH_NUM - len(task_pool)
         data_list = RedisCaseLawyerDocMaster.extract(extract_num=extract_num)
-        task_pool.extend(data["doc_id"] for data in data_list)
+        task_pool.extend(data["doc_id"] for data in data_list)  # doc_id放入任务队列
         if not task_pool:
             logging.info("=*= 没有任务，休眠60秒 =*=")
             time.sleep(60)
             continue
-        pool.validate_init_ip_proxy()
+        pool.validate_init_ip_proxy()  # ip池中ip数据清理与添加.
         begain = time.time()
         loop.run_until_complete(
             asyncio.wait(
@@ -104,13 +104,3 @@ if __name__ == '__main__':
         if sleep_time > 0:
             logging.warning("---批次进行过快,休眠{}秒.---".format(sleep_time))
             time.sleep(sleep_time)
-# if __name__ == '__main__':
-#     pool = ProxyPool()
-#     pool.change_ip_proxy_cache(1)  # 设置代理池一个ip
-#     loop = asyncio.get_event_loop()
-#     task_pool = ["8d39d696-e030-4eac-8870-a9d00033bce9"]
-#     pool.validate_init_ip_proxy()
-#     loop.run_until_complete(
-#         asyncio.wait(
-#             [download.async_get_data_javascript_callback(doc_id, callback=CallBack) for doc_id in task_pool])
-#     )
