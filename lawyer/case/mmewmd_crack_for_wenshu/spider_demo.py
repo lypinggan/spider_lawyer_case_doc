@@ -45,6 +45,7 @@ class SpiderManager(object):
         self.content = ""
         self.debug = debug
         self.conditions = ""
+        self.proxies = None
         self.url = "http://wenshu.court.gov.cn/List/List?sorttype=1&conditions={}"
         self.url_for_content = "http://wenshu.court.gov.cn/List/ListContent"
         self.headers = {
@@ -99,11 +100,13 @@ class SpiderManager(object):
         cookies['wzwsvtime'] = str(int(time.time()))
         # cookies = "; ".join(cookies)
         try:
-            rsp = requests.get(request_url, headers=headers, cookies=cookies)
+            rsp = requests.get(request_url, headers=headers, cookies=cookies, proxies=self.proxies)
             rsp.close()
         except Exception as e:
             if self.debug:
                 print(e)
+                import logging
+                logging.error(e)
                 print("网络连接出错，稍等5秒后重新执行")
             time.sleep(5)
             return self.init()
@@ -128,7 +131,7 @@ class SpiderManager(object):
         cookies['FSSBBIl1UgzbN7N80T'] = self.f80t_n
         cookies['wzwsvtime'] = str(int(time.time()))
         try:
-            rsp = requests.get(request_url, headers=headers, cookies=cookies)
+            rsp = requests.get(request_url, headers=headers, cookies=cookies, proxies=self.proxies)
             rsp.close()
         except Exception as e:
             if self.debug:
@@ -184,7 +187,7 @@ class SpiderManager(object):
         headers = self.headers
         headers['Referer'] = self.url.format(parse.quote(self.conditions))
         try:
-            rsp = requests.post(url, headers=headers, cookies=cookies, data=data)
+            rsp = requests.post(url, headers=headers, cookies=cookies, data=data, proxies=self.proxies)
         except Exception as e:
             if self.debug:
                 print(e)
@@ -201,10 +204,12 @@ class SpiderManager(object):
     def getData(self):
         return self.content
 
+
 if __name__ == '__main__':
-    for i in range(10):
+    for i in range(20):
         # 实例化并开启调试模式，会返回报错信息
         spider = SpiderManager(debug=True)
+        spider.proxies = {"http": "http://114.233.3.102:13237"}
         # 设置采集条件
         # spider.setconditions("searchWord+2+AJLX++案件类型:民事案件")
         spider.setconditions("searchWord++CPRQ++裁判日期:2019-01-01%20%20TO%20%202019-01-01")
@@ -214,7 +219,7 @@ if __name__ == '__main__':
         status = spider.getvjkl5()
         if status:
             print("获取vjkl5成功")
-            status = spider.getContent(page=i+1)
+            status = spider.getContent(page=i + 1)
             if status:
                 print(spider.getData())
             else:
@@ -223,7 +228,3 @@ if __name__ == '__main__':
             # 自己写，重新获得getvjkl5
             pass
         time.sleep(4)
-
-
-
-

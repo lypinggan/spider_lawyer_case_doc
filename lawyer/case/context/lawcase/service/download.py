@@ -39,7 +39,9 @@ async def async_post_get_vjkl5_url(client, url, proxies={}, context={}):
         writ_content.close()
     return _ret
 
-async def post_list_context_by_param(client, guid, vjkl5, vl5x, number, param, index=1, page=20, _proxies={},):
+
+async def post_list_context_by_param(client, guid, vjkl5, vl5x, number, param, index=1, page=20, _proxies={},
+                                     cookies={}):
     from lawcase.config import LIST_CONTEXT_ORDER_BY, LIST_CONTEXT_ORDER_DIRECTION
     payload = {'Param': param,
                'Index': index,
@@ -62,14 +64,26 @@ async def post_list_context_by_param(client, guid, vjkl5, vl5x, number, param, i
                'X-Requested-With': 'XMLHttpRequest',
                }
     logging.info("*=*== _proxies=" + str(_proxies) + ";param=" + param + ";index=" + str(index) + " *=*==")
-    _ret = await client.post(url='http://wenshu.court.gov.cn/List/ListContent',
-                             proxy_headers=headers,
-                             data=payload,
-                             timeout=15,
-                             proxy=_proxies.get("http"),
-                             )
-    assert _ret.status == 200
-    ret_text = await _ret.text()
+    import requests
+    _ret = requests.post(url='http://wenshu.court.gov.cn/List/ListContent',
+                         headers=headers,
+                         data=payload,
+                         timeout=15,
+                         proxies=_proxies,
+                         cookies=cookies
+                         )
+    print(_ret.text)
+    ret_text = _ret.text
+    # _ret = await client.post(url='http://wenshu.court.gov.cn/List/ListContent',
+    #                          headers=headers,
+    #                          data=payload,
+    #                          timeout=15,
+    #                          proxy=_proxies.get("http"),
+    #                          )
+
+    # if _ret and _ret.status != 200:
+    #     raise RuntimeError("_ret.status={}".format(_ret.status))
+    # ret_text = await _ret.text
     if _ret:
         _ret.close()
     return ret_text

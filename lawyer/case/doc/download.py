@@ -153,22 +153,10 @@ async def async_get_data_javascript(doc_id):
     """
     async with aiohttp.ClientSession() as client:
         client.cookie_jar.clear()
-        # logging.info(payload)
-        # logging.info(headers)
         await async_get_data_javascript_step2(client, doc_id)
 
 
 async def async_get_data_javascript_callback(doc_id, callback=None):
-    payload = {"DocID": doc_id, }
-    headers = {'Accept': 'text/javascript, application/javascript, */*',
-               'Accept-Encoding': 'gzip, deflate',
-               'Accept-Language': 'zh-CN,zh;q=0.9',
-               'Proxy - Connection': 'keep - alive',
-               "Referer": "http://wenshu.court.gov.cn/content/content?DocID={}&KeyWord=".format(doc_id),
-               'Host': 'wenshu.court.gov.cn',
-               'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36',
-               'X-Requested-With': 'XMLHttpRequest',
-               }
     ip_proxy_item = proxy_pool.extract_cache_ip_proxy_item()
     if not ip_proxy_item:
         logging.info(str("doc_id=" + doc_id) + ";===proxy===" + str(ip_proxy_item))
@@ -178,19 +166,8 @@ async def async_get_data_javascript_callback(doc_id, callback=None):
     writ_content = None
     from doc_page_encrypt import InvalidIP, main
     try:
-        # mmd_param_cookie = await build_mmewmd(proxy)
         if True:
-            # async with aiohttp.ClientSession(cookies=mmd_param_cookie) as client:
             ProxyPool.check_proxy(proxy)  # 代理检查
-            # writ_content = await client.post(
-            #     url='http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}'.format(doc_id),
-            #     proxy_headers=headers,
-            #     data=payload,
-            #     timeout=15,
-            #     proxy=proxy,
-            # )
-            # java_script = await writ_content.text()
-            # assert writ_content.status == 200
             if ip_proxy_item.is_stop():
                 logging.info("---请求无效,等待再次更新ip--- 【{}】".format(ip_proxy_item))
                 return

@@ -47,7 +47,7 @@ if __name__ == '__main__':
         loop = asyncio.get_event_loop()
         pool.validate_init_ip_proxy()
         remove_not_process_data(task_pool)
-        LIST_CONTEXT_BATCH_NUM = 2  # TODO:需要
+        LIST_CONTEXT_BATCH_NUM = 1  #
         extract_num = LIST_CONTEXT_BATCH_NUM - len(task_pool)
         bean_list = RedisCaseLawyerTaskMasterHelper.extract_lawyer_info_bean_list(extract_num=extract_num)
         task_pool.extend(bean_list)

@@ -28,7 +28,7 @@ class CasePlanSchema(object):
     __max_data_num = MAX_PAGE_DATA_NUM  # 最大条数
 
     @staticmethod
-    @log_cost_time(describe="下载目录内容")
+    # @log_cost_time(describe="下载目录内容")
     async def proceed_schema(bean):
         """
         下载任务
@@ -73,6 +73,9 @@ class CasePlanSchema(object):
             except aiohttp.client_exceptions.ServerDisconnectedError:
                 logging.error("=== ServerDisconnectedError {}".format(ip_proxy_item))
                 proxy_pool.fail(ip_proxy_item, multiple=2)
+            except RuntimeError as error:
+                logging.error("=== RuntimeError {}".format(str(error), ip_proxy_item))
+                proxy_pool.fail(ip_proxy_item, multiple=1)
             except Exception:
                 proxy_pool.fail(ip_proxy_item, multiple=10)
                 logging.exception("error=>: {}".format(ip_proxy_item))
@@ -131,8 +134,12 @@ class CasePlanSchema(object):
         return __deal_task_pool
 
 
-async def _proceed_schema(param, proxies={}, index=1, page=20):
-    from doc_page_encrypt import build_uuid, get_vl5x, extract_mmd_param
+async def _proceed_schema(param,
+                          proxies={},
+                          index=1,
+                          page=20):
+    from doc_page_encrypt import build_uuid, get_vl5x, extract_mmd_param, js1
+
     cookies = {
         "ccpassport": "1ff98c661b8f424096c234ce889da9b0",
         "_gscu_2116842793": "47626758817stt18",
@@ -147,7 +154,8 @@ async def _proceed_schema(param, proxies={}, index=1, page=20):
     url = "http://wenshu.court.gov.cn/list/list/?sorttype=1&conditions=searchWord+%E4%BA%91%E5%8D%97%E4%B8%87%E6%88%90%E5%BE%8B%E5%B8%88%E4%BA%8B%E5%8A%A1%E6%89%80+LS++%E5%BE%8B%E6%89%80:%E4%BA%91%E5%8D%97%E4%B8%87%E6%88%90%E5%BE%8B%E5%B8%88%E4%BA%8B%E5%8A%A1%E6%89%80&conditions=searchWord+%E9%87%91%E5%88%99%E8%BE%89+LAWYER++%E5%BE%8B%E5%B8%88:%E9%87%91%E5%88%99%E8%BE%89"
     context = {"f80s": "", "f80t": "", "meta": "", "ywtu": "", "f80t_n": ""}
     await extract_mmd_param(cookies, proxies, url, context)
-
+    import execjs
+    ctx1 = execjs.compile(js1)
     # 获取正文
     vjkl5 = context.get("vjkl5")
     vl5x = get_vl5x(vjkl5)
@@ -157,11 +165,13 @@ async def _proceed_schema(param, proxies={}, index=1, page=20):
     cookies['vjkl5'] = vjkl5
     cookies['FSSBBIl1UgzbN7Nenable'] = "true"
     cookies['FSSBBIl1UgzbN7N80S'] = context.get("f80s")
-    cookies['FSSBBIl1UgzbN7N80T'] = context.get("f80t_n")
-    async with aiohttp.ClientSession(cookies=cookies) as client:
+    f80t_n = ctx1.call("getCookies", context.get("meta"), context.get("f80t"), context.get("ywtu"))
+    cookies['FSSBBIl1UgzbN7N80T'] = f80t_n
+    async with aiohttp.ClientSession() as client:
         json_text = await download.post_list_context_by_param(client, guid, vjkl5, vl5x, number, param,
                                                               index=index,
                                                               page=page,
                                                               _proxies=proxies,
+                                                              cookies=cookies,
                                                               )
         return json_text

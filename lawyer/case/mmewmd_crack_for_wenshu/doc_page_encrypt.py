@@ -164,7 +164,7 @@ async def extract_mmd_param(cookies, _proxies, url, context) -> dict:
         proxy = _proxies if isinstance(_proxies, str) else _proxies.get("http")
         writ_content = await client.post(
             url=url,
-            proxy_headers=headers,
+            headers=headers,
             timeout=15,
             proxy=proxy,
         )
@@ -178,7 +178,6 @@ async def extract_mmd_param(cookies, _proxies, url, context) -> dict:
         context["f80t"] = f80t
         ctx1 = execjs.compile(js1)
         ctx2 = execjs.compile(js2)
-        print(html_text)
         meta = html.xpath('//*[@id="9DhefwqGPrzGxEp9hPaoag"]/@content')[0]
         context["meta"] = meta
         ywtu = ctx2.call("getc", meta)
@@ -207,7 +206,7 @@ async def extract_mmd_param(cookies, _proxies, url, context) -> dict:
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/71.0.3578.98 Safari/537.36"
         }
         writ_content = await client.post(url=url,
-                                         proxy_headers=headers,
+                                         headers=headers,
                                          timeout=10,
                                          proxy=proxy,
                                          )
@@ -244,10 +243,25 @@ async def main(doc_id, ip_proxy_item):
         "DocID": "{}".format(doc_id),
     }
     url = "http://wenshu.court.gov.cn/CreateContentJS/CreateContentJS.aspx?DocID={}".format(doc_id)
-    rsp = requests.post(url, headers=headers, data=data, proxies=proxies)  # TODO:
-    assert rsp.status_code == 200
-    print(rsp.text)
-    return rsp.text
+
+    # rsp = requests.post(url, headers=headers, data=data, proxies=proxies)  # TODO:
+    # print(rsp.text)
+    # return rsp.text
+    proxy = ip_proxy_item.proxies if isinstance(ip_proxy_item.proxies, str) else ip_proxy_item.proxies.get("http")
+    async with aiohttp.ClientSession() as client:
+        rsp = await client.post(
+            url=url,
+            headers=headers,
+            data=data,
+            timeout=10,
+            proxy=proxy,
+        )
+        html_text = await rsp.text()
+        if rsp.status != 200:
+            logging.error("=====rsp.status={}".format(rsp.status))
+        assert rsp.status == 200
+        print(html_text)
+        return html_text
 
 
 proxies = {
